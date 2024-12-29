@@ -1,21 +1,18 @@
-	/*
- * traffic1.c
+/*
+ * LCD.c
  *
- * Created: 30-03-2024 21:39:47
+ * Created: 29-03-2024 22:02:27
  * Author : Dev Arora
  */ 
 #define F_CPU 16000000UL
 #include <avr/io.h>
-#include <util/delay.h>
-#include <stdlib.h>
-#include <stdio.h>
-#define Bud 9600UL
+#include <util/delay.h>	
 #define RS PG2
 #define RW PG1
 #define EN PG0
-#define LCD_Data_Dir DDRC		
-#define LCD_Command_Dir DDRG		
-#define LCD_Data_Port PORTC		
+#define LCD_Data_Dir DDRC		/* Define LCD data port direction */
+#define LCD_Command_Dir DDRG		/* Define LCD command port direction register */
+#define LCD_Data_Port PORTC		/* Define LCD data port */
 #define LCD_Command_Port PORTG
 
 void LCD_Command(unsigned char c)
@@ -31,9 +28,10 @@ void LCD_Command(unsigned char c)
 void LCD_Init (void){
 	DDRC=0xff;
 	DDRG=0xff;
+	DDRA=0xff;
 	_delay_ms(30);
-	LCD_Command (0x38);
-	_delay_ms(2);/* Initialization of 16X2 LCD in 8bit */
+	LCD_Command (0x38);	
+	_delay_ms(2);/* Initialization of 16X2 LCD in 8bit mode */
 	LCD_Command (0x0C);
 	_delay_ms(2);	/* Display ON Cursor OFF */
 	LCD_Command (0x06);
@@ -42,7 +40,10 @@ void LCD_Init (void){
 	_delay_ms(2);	/* clear display */
 	LCD_Command (0x80);
 	_delay_ms(2);
-}
+	PORTA=0xff;
+	_delay_ms(1000);
+	PORTA=0x00;
+	}
 
 void LCD_Char (unsigned char char_data)	/* LCD data write function */
 {
@@ -50,7 +51,7 @@ void LCD_Char (unsigned char char_data)	/* LCD data write function */
 	LCD_Command_Port |= (1<<RS);	/* RS=1 Data reg. */
 	LCD_Command_Port &= ~(1<<RW);	/* RW=0 write operation */
 	LCD_Command_Port |= (1<<EN);	/* Enable Pulse */
-     _delay_us(1);
+	_delay_us(1);
 	LCD_Command_Port &= ~(1<<EN);
 	_delay_ms(1);
 }
@@ -70,57 +71,13 @@ void LCD_Clear()
 
 
 int main(void){
-DDRA=0xff;
-PORTA=0xff;
-_delay_ms(1000);
-DDRB=DDRB | (1<<2) |(1<<0);
-PORTB=PORTB & 0b11111110;
-DDRB=DDRB | (1<<1);
-SPCR= SPCR | (1<<SPE) | (1<<MSTR) | (1<<SPR0);
-LCD_Init();
-LCD_Clear();	
-char Queue[5];
-for(int i=0; i<5; i++){
-	Queue[i]='0';
+	LCD_Init();
+	LCD_Clear();
+	LCD_String("GOODNIGHT");
+	LCD_Command(0xC0);
+	LCD_String("");
+	
+	return 0;
+	
 }
-DDRF=0X00;
-for(int i=0; i<5; i++){
-	PORTA=0xff;
-	_delay_ms(5000);
-	PORTA=0x00;
-	if(PINF==0b00000000){
-		Queue[i]='1';
-		LCD_String("1");
-		_delay_ms(10);
-		
-	}
-    else if(PINF==0B10000000){
-		Queue[i]='2';
-		LCD_String("2");
-		_delay_ms(10);
-}
-    else if(PINF==0b11000000){
-	    Queue[i]='3';
-		LCD_String("3");
-	}
-     else {
- 		Queue[i]='4';
- 		LCD_String("4");
-		_delay_ms(10);
- 	}
-}
-while(1){
-	for(int i=0; i<5; i++){
-		SPDR=Queue[i];
-		while (!(SPSR & (1<<SPIF)));
-		_delay_ms(100);
-	}
-	SPDR=' ';
-	while (!(SPSR & (1<<SPIF)));
-	_delay_ms(100);
-}
-
-return 0;
-}
-		
 
